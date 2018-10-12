@@ -2,16 +2,22 @@ package com.usoft.suntg.quartz.service;
 
 import com.usoft.suntg.quartz.entity.JobConfigEntity;
 import org.quartz.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.quartz.SchedulerFactoryBean;
+import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
 import java.util.Map;
 
+@Component
 public class JobService {
 
     @Autowired
     private SchedulerFactoryBean schedulerFactoryBean;
+
+    private static Logger logger = LoggerFactory.getLogger(JobService.class);
 
     /**
      * 任务配置容器
@@ -50,8 +56,10 @@ public class JobService {
                 .withSchedule(scheduleBuilder).build();
 
         try {
-            scheduler.scheduleJob(jobDetail, trigger);
-            scheduler.start();
+            getScheduler().scheduleJob(jobDetail, trigger);
+            getScheduler().start();
+            logger.info("Update a job, jobDetail: {}, {}; trigger: {}, {}", jobDetail.getKey().getName(), jobDetail.getKey().getName(),
+                    trigger.getKey().getGroup(), trigger.getKey().getName());
         } catch (SchedulerException e) {
             e.printStackTrace();
         }
@@ -65,6 +73,28 @@ public class JobService {
         JobKey jobKey = JobKey.jobKey(jobConfigEntity.getJobDetailId(), JOB_GROUP_NAME);
         TriggerKey triggerKey = TriggerKey.triggerKey(jobConfigEntity.getJobDetailId(), TRIGGER_GROUP_NAME);
 
+        try {
+            // 移除原有任务
+            Trigger oldTrigger = getScheduler().getTrigger(triggerKey);
+            if (oldTrigger != null) {
+                getScheduler().pauseTrigger(triggerKey);
+                getScheduler().unscheduleJob(triggerKey);
+            }
+            getScheduler().deleteJob(jobKey);
+            logger.info("Update job, delete old job: {}, {}.", jobKey.getGroup(), jobKey.getName());
+
+            // 添加新的任务
+            JobDetail jobDetail = JobBuilder.newJob(jobConfigEntity.getJobBean().getClass())
+                    .withIdentity(jobConfigEntity.getJobDetailId(), JOB_GROUP_NAME).build();
+            CronScheduleBuilder scheduleBuilder = CronScheduleBuilder.cronSchedule(jobConfigEntity.getCron());
+            Trigger trigger = TriggerBuilder.newTrigger().withIdentity(jobConfigEntity.getJobDetailId(), TRIGGER_GROUP_NAME)
+                    .withSchedule(scheduleBuilder).build();
+            getScheduler().scheduleJob(jobDetail, trigger);
+            getScheduler().start();
+            logger.info("Update job, add new job: {}, {}.", jobKey.getGroup(), jobKey.getName());
+        } catch (SchedulerException e) {
+            e.printStackTrace();
+        }
 
     }
 
