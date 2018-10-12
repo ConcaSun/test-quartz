@@ -1,35 +1,39 @@
 package com.usoft.suntg.quartz.init;
 
-import com.usoft.suntg.quartz.job.ScheduledJob;
-import com.usoft.suntg.quartz.service.SampleService;
-import org.quartz.*;
+import com.usoft.suntg.quartz.entity.JobConfigEntity;
+import com.usoft.suntg.quartz.service.JobService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
-import org.springframework.scheduling.quartz.SchedulerFactoryBean;
 import org.springframework.stereotype.Component;
 
+/**
+ * 程序启动执行
+ * @author suntg
+ */
 @Component
 public class ScheduledInitializer implements CommandLineRunner {
 
     @Autowired
-    private SchedulerFactoryBean schedulerFactoryBean;
+    private JobService jobService;
 
     @Override
     public void run(String... args) throws Exception {
-        // 创建scheduler
-        Scheduler scheduler = schedulerFactoryBean.getScheduler();
+        JobConfigEntity jobConfigEntity = new JobConfigEntity();
+        jobConfigEntity.setName("定时取消超时未付款的订单");
+        jobConfigEntity.setCron("0/5 * * * * ? ");
+        jobConfigEntity.setEnable(true);
+        jobService.add(jobConfigEntity);
 
-        // 创建jobDetail，可以指定名称和分组，也可以不指定，quartz会自动生成
-        JobDetail jobDetail = JobBuilder.newJob(ScheduledJob.class).build();
+        jobConfigEntity = new JobConfigEntity();
+        jobConfigEntity.setName("定时刷新计数器结果");
+        jobConfigEntity.setCron("0/10 * * * * ? ");
+        jobConfigEntity.setEnable(false);
+        jobService.add(jobConfigEntity);
 
-        // 创建 trigger，这里创建的是simple trigger，名称和分组可以指定也可以不指定，不指定或自动生成
-        Trigger trigger = TriggerBuilder.newTrigger().withSchedule(SimpleScheduleBuilder.repeatSecondlyForever(1)
-                .repeatForever()).startNow().build();
-
-        // scheduler 加载jobDetail 和 trigger
-        scheduler.scheduleJob(jobDetail, trigger);
-
-        // scheduler 启动，按照trigger的规则触发调用jobDetail的executeInternal方法
-        scheduler.start();
+        jobConfigEntity = new JobConfigEntity();
+        jobConfigEntity.setName("定时刷新B2B可送货状态");
+        jobConfigEntity.setCron("0/3 * * * * ? ");
+        jobConfigEntity.setEnable(true);
+        jobService.add(jobConfigEntity);
     }
 }

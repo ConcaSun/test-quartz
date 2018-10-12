@@ -35,6 +35,10 @@ public class JobConfigEntity {
         return id;
     }
 
+    public void setId(int id) {
+        this.id = id;
+    }
+
     public String getName() {
         return name;
     }
@@ -60,23 +64,13 @@ public class JobConfigEntity {
     }
 
     /**
-     * 自动生成调度任务
-     * @return
-     */
-    public QuartzJobBean getJobBean() {
-        return new QuartzJobBean() {
-            @Override
-            protected void executeInternal(JobExecutionContext jobExecutionContext) throws JobExecutionException {
-                System.out.println(id + "_" + name + "_" + cron);
-            }
-        };
-    }
-
-    /**
      * 加入到调度器的jobDetail的名称
      * @return
      */
     public String getJobDetailId() {
         return MYJOB_PREFX + this.id;
+    }
+
+    public JobConfigEntity() {
     }
 }

@@ -22,6 +22,7 @@ public class ScheduledConfiguration {
     @Bean
     public SchedulerFactoryBean schedulerFactoryBean () {
         SchedulerFactoryBean schedulerFactoryBean = new SchedulerFactoryBean();
+        // 能够获取到自动注入的spring bean
         schedulerFactoryBean.setJobFactory(beanAutowiredJobFactory);
         return schedulerFactoryBean;
     }
